@@ -1,6 +1,3 @@
-import Scrapper.client
-import Scrapper.loadPages
-import Scrapper.loadBookInfo
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.ktor.client.*
@@ -18,42 +15,16 @@ import models.BookPage
 import models.Section
 
 
-fun main() = runBlocking(Dispatchers.IO) {
-    val user = User(System.getenv("user"), System.getenv("pass"))
-    user.auth()
-    println(user.token)
-
-    val bookid = "9781800564909"
-
-    val bookInfo = loadBookInfo(user, bookid)
-
-    bookInfo.bookChapters.map { chapter ->
-        println("Starting loading ${chapter.title} ${chapter.id}")
-        chapter.sections.map { section ->
-            launch {
-                loadPages(user, bookInfo, chapter, section)
-                delay(500)
-            }
-        }.forEach {
-            it.join()
-        }
-    }
-
-    println("Done")
-    client.close()
-}
-
-
-val isLoaded = mutableMapOf<String, Boolean>()
-
-
 object Scrapper {
-    val client = HttpClient(OkHttp) {
+    private val isLoaded = mutableMapOf<String, Boolean>()
+    private val client = HttpClient(OkHttp) {
         install(JsonPlugin) {
             serializer = GsonSerializer()
         }
     }
-    val database = BooksDatabase()
+    private val database = BooksDatabase()
+
+    private val epubHandler = EpubHandler(client, database)
 
     suspend fun loadPages(
         user: User,
@@ -87,6 +58,7 @@ object Scrapper {
                     bookChapter.title
                 )
                 database.savePage(bookPage)
+                isLoaded[it.key] = true
             }
         }
     }
@@ -127,6 +99,32 @@ object Scrapper {
         )
         database.saveBookInfo(info)
         return info
+    }
+
+    @JvmStatic
+    fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
+        val user = User(System.getenv("user"), System.getenv("pass"))
+        user.auth()
+        println(user.token)
+
+        val bookid = "9781800564909"
+
+        val bookInfo = loadBookInfo(user, bookid)
+
+        bookInfo.bookChapters.map { chapter ->
+            println("Starting loading ${chapter.title} ${chapter.id}")
+            chapter.sections.map { section ->
+                launch {
+                    loadPages(user, bookInfo, chapter, section)
+                    delay(500)
+                }
+            }.forEach {
+                it.join()
+            }
+        }
+
+        println("Done")
+        client.close()
     }
 }
 

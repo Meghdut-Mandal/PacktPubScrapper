@@ -57,11 +57,10 @@ class BooksDatabase {
                 it[pageContent] = bookPage.pageContent
                 it[title] = bookPage.title
             }
-            isLoaded[bookPage.pageid] = true
         }
     }
 
-    fun saveBookInfo(bookInfo:BookInfo) {
+    fun saveBookInfo(bookInfo: BookInfo) {
         transaction {
             addLogger(StdOutSqlLogger)
             BookInfoTable.insertIgnore {
@@ -77,15 +76,44 @@ class BooksDatabase {
         }
     }
 
-    // read pages of a book
-    fun readBookPages(bookId: String): Map<String, String> {
-        val pages = mutableMapOf<String, String>()
+    // get book info
+    fun getBookInfo(bookId: String): BookInfo? {
+        var bookInfo: BookInfo? = null
         transaction {
-            BookPagesTable.select { BookPagesTable.bookId eq bookId }.forEach {
-                // add to pages
-                pages[it[pageId]] = it[BookPagesTable.pageContent]
+            addLogger(StdOutSqlLogger)
+            BookInfoTable.select { BookInfoTable.bookId eq bookId }.forEach {
+                bookInfo = BookInfo(
+                    it[BookInfoTable.bookId],
+                    it[BookInfoTable.title],
+                    it[BookInfoTable.isbn10],
+                    it[BookInfoTable.oneLiner],
+                    it[BookInfoTable.about],
+                    it[BookInfoTable.category],
+                    it[BookInfoTable.coverImage],
+                    it[BookInfoTable.author]
+                )
             }
         }
-        return pages
+        return bookInfo
+    }
+
+    // read BookPages from database of a bookid
+    fun getBookPages(bookId: String): List<BookPage> {
+        val bookPages = mutableListOf<BookPage>()
+        transaction {
+            addLogger(StdOutSqlLogger)
+            BookPagesTable.select { BookPagesTable.bookId eq bookId }.forEach {
+                bookPages.add(
+                    BookPage(
+                        it[pageId],
+                        it[BookPagesTable.bookId],
+                        it[BookPagesTable.pageContent],
+                        it[chapterId],
+                        it[BookPagesTable.title]
+                    )
+                )
+            }
+        }
+        return bookPages
     }
 }
