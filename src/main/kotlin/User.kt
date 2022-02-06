@@ -1,3 +1,4 @@
+import Scrapper.client
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.ktor.client.request.*
@@ -11,7 +12,7 @@ class User(val username: String, val password: String) {
 
     @OptIn(InternalAPI::class)
     suspend fun auth() {
-        val response = client.post("${Config.BASE_URL}${Config.AUTH_ENDPOINT}") {
+        val response = client.post("${NetworkConfig.BASE_URL}${NetworkConfig.AUTH_ENDPOINT}") {
             contentType(ContentType.Application.Json)
             headers {
                 append(
