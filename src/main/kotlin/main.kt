@@ -5,8 +5,11 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.json.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.*
+import models.BookChapter
 
 
 val client = HttpClient(OkHttp) {
@@ -17,14 +20,28 @@ val client = HttpClient(OkHttp) {
 val database = BooksDatabase()
 
 
-fun main() = runBlocking {
+fun main() = runBlocking(Dispatchers.IO) {
     val user = User(System.getenv("user"), System.getenv("pass"))
     user.auth()
     println(user.token)
 
-    val bookid = "9781800564909"
+    val bookid = "9781838821470"
 
-    loadBookSummary(user, bookid)
+    val chapters = loadBookSummary(user, bookid)
+
+    chapters.map { chapter ->
+        println("Starting loading ${chapter.title} ${chapter.id}")
+        chapter.sections.map { section ->
+            launch {
+                loadBookData(user, bookid, chapter.id.toInt(), section.id)
+                delay(500)
+            }
+        }.forEach {
+            it.join()
+        }
+    }
+
+    println("Done")
     client.close()
 }
 
@@ -46,7 +63,7 @@ object Config {
 val isLoaded = mutableMapOf<String, Boolean>()
 
 
-suspend fun loadBookData(user: User, bookId: String, chapterId: Int, pageId: String): String  {
+suspend fun loadBookData(user: User, bookId: String, chapterId: Int, pageId: String) {
     val response = client.get(
         "${Config.BOOKS_ENDPOINT}/$bookId/$chapterId/$pageId",
         user.authHeader()
@@ -62,20 +79,23 @@ suspend fun loadBookData(user: User, bookId: String, chapterId: Int, pageId: Str
         if (isLoaded[it.key] != true)
             database.saveRow(it.key, it.value.asString, bookId, chapterId) // save data to db
     }
-
-    return response.bodyAsText()
 }
 
 
-suspend fun loadBookSummary(user: User, bookId: String) {
+suspend fun loadBookSummary(user: User, bookId: String): List<BookChapter> {
     val response = client.get("${Config.API_BASE}/$bookId/summary", user.authHeader())
 
     val jsonText = response.bodyAsText()
     // get data from json
     val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
     val data = jsonObject["data"].asJsonObject
-    data.entrySet().forEach {
-        println("${it.key} : ${it.value}")
+    val gson = Gson()
+    val chapters = data["toc"].asJsonObject["chapters"].asJsonArray.map {
+        gson.fromJson(
+            it,
+            BookChapter::class.java
+        )
     }
+    return chapters
 }
 
