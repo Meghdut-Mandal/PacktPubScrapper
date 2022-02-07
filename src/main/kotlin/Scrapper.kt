@@ -103,7 +103,7 @@ object Scrapper {
 
     @JvmStatic
     fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
-        val bookid = "9781800560444"
+        val bookid = System.getenv("bookid")
 
         val user = User(System.getenv("user"), System.getenv("pass"))
         user.auth(client)

@@ -11,7 +11,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 class BooksDatabase {
 
     init {
-        Database.connect("jdbc:sqlite:book_pages.db", driver = "org.sqlite.JDBC")
+        Database.connect("jdbc:sqlite:store/book_pages.db", driver = "org.sqlite.JDBC")
         transaction {
             SchemaUtils.create(BookPagesTable, BookInfoTable)
         }
@@ -48,7 +48,6 @@ class BooksDatabase {
             .hash().asLong().toString(26)
 
         transaction {
-            addLogger(StdOutSqlLogger)
             BookPagesTable.insertIgnore {
                 it[id] = hash
                 it[bookId] = bookPage.bookId
@@ -62,7 +61,6 @@ class BooksDatabase {
 
     fun saveBookInfo(bookInfo: BookInfo) {
         transaction {
-            addLogger(StdOutSqlLogger)
             BookInfoTable.insertIgnore {
                 it[bookId] = bookInfo.bookId
                 it[title] = bookInfo.title
@@ -80,7 +78,6 @@ class BooksDatabase {
     fun getBookInfo(bookId: String): BookInfo? {
         var bookInfo: BookInfo? = null
         transaction {
-            addLogger(StdOutSqlLogger)
             BookInfoTable.select { BookInfoTable.bookId eq bookId }.forEach {
                 bookInfo = BookInfo(
                     it[BookInfoTable.bookId],
@@ -101,7 +98,6 @@ class BooksDatabase {
     fun getBookPages(bookId: String): List<BookPage> {
         val bookPages = mutableListOf<BookPage>()
         transaction {
-            addLogger(StdOutSqlLogger)
             BookPagesTable.select { BookPagesTable.bookId eq bookId }.forEach {
                 bookPages.add(
                     BookPage(
