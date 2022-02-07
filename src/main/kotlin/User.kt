@@ -1,6 +1,6 @@
-import Scrapper.client
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -11,7 +11,7 @@ class User(val username: String, val password: String) {
     lateinit var token: String
 
     @OptIn(InternalAPI::class)
-    suspend fun auth() {
+    suspend fun auth(client: HttpClient) {
         val response = client.post("${NetworkConfig.BASE_URL}${NetworkConfig.AUTH_ENDPOINT}") {
             contentType(ContentType.Application.Json)
             headers {
@@ -24,10 +24,11 @@ class User(val username: String, val password: String) {
             }
             body = this@User
         }
+
         if (response.status == HttpStatusCode.OK) {
             val jsonText = response.bodyAsText()
             // parse json to get token
-            val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
+            val jsonObject =  Gson().fromJson(jsonText, JsonObject::class.java)
             token = "Bearer " + jsonObject["data"].asJsonObject["access"].asString
         } else throw Exception("Error getting token ${response.status} ${response.bodyAsText()}")
     }

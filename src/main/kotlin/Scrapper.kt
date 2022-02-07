@@ -26,7 +26,7 @@ object Scrapper {
 
     private val epubHandler = EpubHandler(client, database)
 
-    suspend fun loadPages(
+    private suspend fun loadPages(
         user: User,
         bookInfo: BookInfo,
         bookChapter: BookChapter,
@@ -64,7 +64,7 @@ object Scrapper {
     }
 
 
-    suspend fun loadBookInfo(user: User, bookId: String): BookInfo {
+    private suspend fun loadBookInfo(user: User, bookId: String): BookInfo {
         val response = client.get("${NetworkConfig.API_BASE}/$bookId/summary", user.authHeader())
 
         val jsonText = response.bodyAsText()
@@ -103,12 +103,11 @@ object Scrapper {
 
     @JvmStatic
     fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
+        val bookid = "9781800560444"
+
         val user = User(System.getenv("user"), System.getenv("pass"))
-        user.auth()
+        user.auth(client)
         println(user.token)
-
-        val bookid = "9781800564909"
-
         val bookInfo = loadBookInfo(user, bookid)
 
         bookInfo.bookChapters.map { chapter ->
@@ -123,6 +122,9 @@ object Scrapper {
             }
         }
 
+        println("Now converting to Epub")
+
+        epubHandler.convertBook(bookid)
         println("Done")
         client.close()
     }

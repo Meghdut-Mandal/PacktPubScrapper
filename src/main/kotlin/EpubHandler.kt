@@ -11,15 +11,16 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
 
     @OptIn(InternalAPI::class)
     fun convertBook(bookId: String) = runBlocking(Dispatchers.IO) {
-        val bookid = "9781838821470"
-        val bookPages = database.getBookPages(bookid)
+        val bookPages = database.getBookPages(bookId)
+        val bookInfo = database.getBookInfo(bookId)?: throw Exception("Book not found")
         bookPages.forEach {
             sendChapter(it.title, it.pageContent)
         }
 
         val jsonBody = JsonObject()
-        jsonBody.addProperty("title", "GraalVM Book")
-        jsonBody.addProperty ("author", "GraalVM")
+        jsonBody.addProperty("title", bookInfo.title)
+        jsonBody.addProperty ("author", bookInfo.author)
+        jsonBody.addProperty("cover", bookInfo.coverImage)
         val res = client.post("http://localhost:3000/make") {
             // json header
             contentType(ContentType.Application.Json)
