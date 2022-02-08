@@ -22,4 +22,4 @@ jobs:
         echo bookid=${{ secrets.BOOK_ID }} >> .env
         cat .env
     - name: Build the Docker image
-      run: docker-compose build . --no-cache
+      run: docker-compose build --no-cache
