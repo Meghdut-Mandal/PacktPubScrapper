@@ -23,3 +23,5 @@ jobs:
         cat .env
     - name: Build the Docker image
       run: docker-compose build --no-cache
+    - name: Run the containers 
+      run : docker-compose up
