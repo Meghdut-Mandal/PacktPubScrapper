@@ -14,5 +14,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Creating the ENV file
+      run : |
+        touch .env
+        echo user=${{ secrets.USER_ID }} >> .env
+        echo pass=${{ secrets.PASS }} >> .env
+        echo bookid=${{ secrets.BOOK_ID }} >> .env
+        cat .env
     - name: Build the Docker image
       run: docker-compose build . --no-cache
