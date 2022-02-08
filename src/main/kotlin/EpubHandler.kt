@@ -6,7 +6,7 @@ import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
-class EpubHandler(private val client: HttpClient, private val database: BooksDatabase) {
+class EpubHandler(private val client: HttpClient, private val database: BooksDatabase, private val ephubHandlerUrl: String) {
 
 
     @OptIn(InternalAPI::class)
@@ -21,7 +21,7 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
         jsonBody.addProperty("title", bookInfo.title)
         jsonBody.addProperty ("author", bookInfo.author)
         jsonBody.addProperty("cover", bookInfo.coverImage)
-        val res = client.post("http://localhost:3000/make") {
+        val res = client.post("$ephubHandlerUrl/make") {
             // json header
             contentType(ContentType.Application.Json)
             // add body
@@ -37,7 +37,7 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
         val jsonBody = JsonObject()
         jsonBody.addProperty("title", title)
         jsonBody.addProperty("data", data.replace("<?xml encoding=\"utf-8\" ?>", ""))
-        val res = client.post("http://localhost:3000/add") {
+        val res = client.post("$ephubHandlerUrl/add") {
             // json header
             contentType(ContentType.Application.Json)
             // add body

@@ -1,0 +1,16 @@
+version: "3"
+services:
+  scrapper:
+    build:
+      dockerfile: Packtpub.Dockerfile
+      context: .
+    volumes:
+      - ./store:/usr/app/store
+  epubhelper:
+    build:
+      dockerfile: epubhelper.Dockerfile
+      context: .
+    volumes:
+      - ./store:/usr/app/store
+    ports:
+      - "3000:3000"

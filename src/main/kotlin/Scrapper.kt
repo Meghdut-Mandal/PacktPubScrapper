@@ -24,7 +24,6 @@ object Scrapper {
     }
     private val database = BooksDatabase()
 
-    private val epubHandler = EpubHandler(client, database)
 
     private suspend fun loadPages(
         user: User,
@@ -103,9 +102,14 @@ object Scrapper {
 
     @JvmStatic
     fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
-        val bookid = System.getenv("bookid")
+        val bookid = System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
+        val username = System.getenv("user") ?: throw Exception("No user found in the ENV variables!")
+        val password = System.getenv("pass") ?: throw Exception("No pass found in the ENV variables!")
+        val epubHandlerUrl = System.getenv("epubhandler") ?:"localhost:3000"
 
-        val user = User(System.getenv("user"), System.getenv("pass"))
+
+        val epubHandler = EpubHandler(client, database, epubHandlerUrl)
+        val user = User(username, password)
         user.auth(client)
         println(user.token)
         val bookInfo = loadBookInfo(user, bookid)
