@@ -46,7 +46,6 @@ object Scrapper {
         val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
         val data = jsonObject["data"].asJsonObject
         data.entrySet().forEach {
-            println("${it.key} : ${it.value}")
 
             if (isLoaded[it.key] != true) {
                 val bookPage = BookPage(
@@ -56,6 +55,7 @@ object Scrapper {
                     bookChapter.id.toInt(),
                     bookChapter.title
                 )
+                println("${it.key} : ${bookChapter.title}")
                 database.savePage(bookPage)
                 isLoaded[it.key] = true
             }

@@ -6,6 +6,11 @@ services:
       context: .
     volumes:
       - ./store:/usr/app/store
+    environment:
+      - bookid=${bookid}
+      - user=${user}
+      - pass=${pass}
+      - epubhandler=epubhelper:3000
   epubhelper:
     build:
       dockerfile: epubhelper.Dockerfile
