@@ -1,3 +1,4 @@
+import BooksDatabase.BookInfoTable.type
 import BooksDatabase.BookPagesTable.chapterId
 import BooksDatabase.BookPagesTable.pageId
 import com.google.common.hash.Hashing
@@ -37,6 +38,7 @@ class BooksDatabase {
         val coverImage = text("coverImage")
         val author = varchar("author", 100)
         val readUrl = varchar("readUrl", 100)
+        val type = varchar("type", 50)
     }
 
     fun savePage(bookPage: BookPage) {
@@ -70,6 +72,7 @@ class BooksDatabase {
                 it[category] = bookInfo.category
                 it[coverImage] = bookInfo.coverImage
                 it[readUrl] = bookInfo.readUrl
+                it[type] = bookInfo.type
                 it[author] = bookInfo.author
             }
         }
@@ -89,6 +92,7 @@ class BooksDatabase {
                     it[BookInfoTable.category],
                     it[BookInfoTable.coverImage],
                     it[BookInfoTable.readUrl],
+                    it[BookInfoTable.type],
                     it[BookInfoTable.author]
                 )
             }

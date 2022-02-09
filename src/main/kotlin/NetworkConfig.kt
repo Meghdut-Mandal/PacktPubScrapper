@@ -8,5 +8,8 @@ object NetworkConfig {
     // progamming language books urls
     const val BOOKS_ENDPOINT = "https://subscription.packtpub.com/api/product/content"
 
+    // API Url for videos
+    const val VIDEO_ENDPOINT = "https://subscription.packtpub.com/api/products"
+
     const val API_BASE = "https://subscription.packtpub.com/api/products/"
 }

@@ -5,14 +5,20 @@ import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.json.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import models.BookChapter
 import models.BookInfo
 import models.BookPage
 import models.Section
+import java.io.File
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.forEach
+import kotlin.collections.map
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
 
 
 object Scrapper {
@@ -24,6 +30,7 @@ object Scrapper {
     }
     private val gson = Gson()
     private val database = BooksDatabase()
+    private val counter = AtomicInteger(0)
 
 
     private val BookInfo.contentType: String
@@ -31,29 +38,73 @@ object Scrapper {
             return readUrl.split("/")[1]
         }
 
-    private suspend fun loadPages(
+    private fun loadContent(
         user: User,
         bookInfo: BookInfo,
         bookChapter: BookChapter,
         section: Section
     ) {
+        when (section.contentType) {
+            "text" -> loadBookPageContent(bookInfo, bookChapter, section, user)
+            "video" -> loadVideoContent(user, bookInfo, bookChapter, section)
+        }
+    }
+
+    private fun loadVideoContent(
+        user: User,
+        bookInfo: BookInfo,
+        bookChapter: BookChapter,
+        section: Section
+    ) = runBlocking {
+        val response = client.get(
+            "${NetworkConfig.VIDEO_ENDPOINT}/${bookInfo.bookId}/${bookChapter.id}/${section.id}",
+            user.authHeader()
+        )
+        counter.incrementAndGet()
+
+        val jsonText = response.bodyAsText()
+        // get data from json
+        val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
+
+        val videoUrl = jsonObject["data"].asString
+
+        // save the video to file
+        val fileName = "store/${bookInfo.bookId}_${bookChapter.id}_${section.id}.mp4"
+        val videoResponse = client.get(videoUrl, user.authHeader())
+        // save the response to file
+        val file = File(fileName)
+
+        file.writeChannel().use {
+            videoResponse.bodyAsChannel().copyAndClose(this)
+        }
+        println("Saved video to $fileName")
+    }
+
+    private fun loadBookPageContent(
+        bookInfo: BookInfo,
+        bookChapter: BookChapter,
+        section: Section,
+        user: User
+    ) = runBlocking {
+
         if (isLoaded[section.id] == true) {
             println("Already loaded ${section.id}")
-            return
+            return@runBlocking
         }
 
         val response = client.get(
             "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.contentType}/${bookInfo.bookId}/${bookChapter.id.toInt()}/${section.id}",
             user.authHeader()
         )
+        counter.incrementAndGet()
 
         val jsonText = response.bodyAsText()
         // get data from json
         val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
         val data = jsonObject["data"].asJsonObject
         data.entrySet().forEach {
-
             if (isLoaded[it.key] != true) {
+                isLoaded[it.key] = true
                 val bookPage = BookPage(
                     it.key,
                     bookInfo.bookId,
@@ -63,9 +114,9 @@ object Scrapper {
                 )
                 println("${it.key} : ${section.title}")
                 database.savePage(bookPage)
-                isLoaded[it.key] = true
             }
         }
+
     }
 
 
@@ -91,6 +142,7 @@ object Scrapper {
         val readUrl = data["readUrl"].asString
         val coverImage = data["coverImage"].asString
         val category = data["category"].asString
+        val type = data["type"].asString
         val author =
             data["linkAuthors"]?.asJsonArray?.get(0)?.asJsonObject?.get("author")?.asString
                 ?: ""
@@ -104,52 +156,61 @@ object Scrapper {
             coverImage,
             category,
             readUrl,
+            type,
             chapters
         )
         database.saveBookInfo(info)
         return info
     }
 
+    private val executor = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
+
     @JvmStatic
-    fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
-        val token = System.getenv("TOKEN") ?: ""
-        val bookid =
-            System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
-        val username = System.getenv("user") ?: ""
-        val password = System.getenv("pass") ?: ""
-        val epubHandlerUrl = System.getenv("epubhandler") ?: "epubhelper:3000"
+    fun main(args: Array<String>) =
+        runBlocking(executor) {
+            val token = System.getenv("TOKEN") ?: ""
+            val bookid =
+                System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
+            val username = System.getenv("user") ?: ""
+            val password = System.getenv("pass") ?: ""
+            val epubHandlerUrl = System.getenv("epubhandler") ?: "epubhelper:3000"
 
-        if (token.isEmpty() && (username.isEmpty() || password.isEmpty())) {
-            throw Exception("Please provide valid credentials!")
-        }
-
-        val epubHandler = EpubHandler(client, database, epubHandlerUrl)
-        val user = User(username, password)
-        if (token.isNotEmpty()) {
-            user.token = token
-        } else {
-            user.auth(client)
-        }
-        println(user.token) // print token
-        val bookInfo = loadBookInfo(user, bookid)
-
-        bookInfo.bookChapters.map { chapter ->
-            println("Starting loading ${chapter.title} ${chapter.id}")
-            chapter.sections.map { section ->
-                launch {
-                    loadPages(user, bookInfo, chapter, section)
-                    delay(500)
-                }
-            }.forEach {
-                it.join()
+            if (token.isEmpty() && (username.isEmpty() || password.isEmpty())) {
+                throw Exception("Please provide valid credentials!")
             }
+
+            val epubHandler = EpubHandler(client, database, epubHandlerUrl)
+            val user = User(username, password)
+            if (token.isNotEmpty()) {
+                user.token = token
+            } else {
+                user.auth(client)
+            }
+            println(user.token) // print token
+            val bookInfo = loadBookInfo(user, bookid)
+
+
+            bookInfo.bookChapters.map { chapter ->
+                println("Starting loading ${chapter.title} ${chapter.id}")
+                launch(executor) {
+                    loadChapterSequential(chapter, user, bookInfo)
+                }
+            }.joinAll()
+
+            println("Requests made  ${counter.get()}")
+            println("Now converting to Epub")
+
         }
 
-        println("Now converting to Epub")
-
-        epubHandler.convertBook(bookid)
-        println("Done")
-        client.close()
+    private suspend fun loadChapterSequential(
+        chapter: BookChapter,
+        user: User,
+        bookInfo: BookInfo
+    ) {
+        chapter.sections.forEach { section ->
+            loadContent(user, bookInfo, chapter, section)
+            delay(500)
+        }
     }
 }
 

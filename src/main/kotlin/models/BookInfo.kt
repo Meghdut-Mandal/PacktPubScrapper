@@ -10,5 +10,6 @@ data class BookInfo(
     val coverImage: String,
     val category: String,
     val readUrl: String,
+    val type: String,
     val bookChapters: List<BookChapter> = listOf()
 )
