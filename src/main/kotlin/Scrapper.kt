@@ -69,16 +69,20 @@ object Scrapper {
         val videoUrl = jsonObject["data"].asString
 
         // save the video to file
-        val fileName = "store/${bookInfo.bookId}_${bookChapter.id}_${section.id}.mp4"
+        val fileName =
+            "store/${bookInfo.title.asFileName()}/${bookChapter.title.asFileName()}/${section.title.asFileName()}_${section.id}.mp4"
         val videoResponse = client.get(videoUrl, user.authHeader())
         // save the response to file
         val file = File(fileName)
+        file.parentFile.mkdirs()
 
         file.writeChannel().use {
             videoResponse.bodyAsChannel().copyAndClose(this)
         }
         println("Saved video to $fileName")
     }
+
+    fun String.asFileName(): String = replace(" ", "_")
 
     private fun loadBookPageContent(
         bookInfo: BookInfo,
