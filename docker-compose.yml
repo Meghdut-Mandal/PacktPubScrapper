@@ -11,6 +11,7 @@ services:
       - user=${user}
       - pass=${pass}
       - epubhandler=epubhelper:3000
+      - TOKEN=${TOKEN}
   epubhelper:
     build:
       dockerfile: epubhelper.Dockerfile

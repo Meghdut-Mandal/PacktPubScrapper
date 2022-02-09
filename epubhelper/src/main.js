@@ -10,15 +10,13 @@ app.use(express.json({limit: '50mb'}));
 let postedContent = []
 
 app.post('/add',(req,res)=>{ //POST request submitted at root page
-    console.log("request received at add of root")
-    console.log(req.body)
+    console.log("Adding chunk " + req.body.title)
     postedContent.push(req.body)
     res.send("data received")
 })
 
 app.post('/make',(req,res)=>{ //POST request submitted at root page
-    console.log("request received at make of root")
-    console.log(req.body)
+    console.log("Starting book generation " + req.body.title + " " + req.body.author + " " + req.body.cover)
     makepub(req.body)
     res.send("data received")
 })

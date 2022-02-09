@@ -22,8 +22,14 @@ object Scrapper {
             serializer = GsonSerializer()
         }
     }
+    private val gson = Gson()
     private val database = BooksDatabase()
 
+
+    private val BookInfo.contentType: String
+        get() {
+            return readUrl.split("/")[1]
+        }
 
     private suspend fun loadPages(
         user: User,
@@ -37,7 +43,7 @@ object Scrapper {
         }
 
         val response = client.get(
-            "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.bookId}/${bookChapter.id.toInt()}/${section.id}",
+            "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.contentType}/${bookInfo.bookId}/${bookChapter.id.toInt()}/${section.id}",
             user.authHeader()
         )
 
@@ -55,7 +61,7 @@ object Scrapper {
                     bookChapter.id.toInt(),
                     bookChapter.title
                 )
-                println("${it.key} : ${bookChapter.title}")
+                println("${it.key} : ${section.title}")
                 database.savePage(bookPage)
                 isLoaded[it.key] = true
             }
@@ -69,8 +75,9 @@ object Scrapper {
         val jsonText = response.bodyAsText()
         // get data from json
         val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
+
         val data = jsonObject["data"].asJsonObject
-        val gson = Gson()
+
         val chapters = data["toc"].asJsonObject["chapters"].asJsonArray.map {
             gson.fromJson(
                 it,
@@ -79,12 +86,14 @@ object Scrapper {
         }
         val title = data["title"].asString
         val oneLiner = data["oneLiner"].asString
-        val isbn10 = data["isbn10"].asString
+        val isbn10 = data["isbn10"]?.asString ?: "NA"
         val about = data["about"].asString
+        val readUrl = data["readUrl"].asString
         val coverImage = data["coverImage"].asString
         val category = data["category"].asString
         val author =
-            data["linkAuthors"]?.asJsonArray?.get(0)?.asJsonObject?.get("author")?.asString ?: ""
+            data["linkAuthors"]?.asJsonArray?.get(0)?.asJsonObject?.get("author")?.asString
+                ?: ""
         val info = BookInfo(
             bookId,
             title,
@@ -94,6 +103,7 @@ object Scrapper {
             about,
             coverImage,
             category,
+            readUrl,
             chapters
         )
         database.saveBookInfo(info)
@@ -102,16 +112,25 @@ object Scrapper {
 
     @JvmStatic
     fun main(args: Array<String>) = runBlocking(Dispatchers.IO) {
-        val bookid = System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
-        val username = System.getenv("user") ?: throw Exception("No user found in the ENV variables!")
-        val password = System.getenv("pass") ?: throw Exception("No pass found in the ENV variables!")
-        val epubHandlerUrl = System.getenv("epubhandler") ?:"localhost:3000"
+        val token = System.getenv("TOKEN") ?: ""
+        val bookid =
+            System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
+        val username = System.getenv("user") ?: ""
+        val password = System.getenv("pass") ?: ""
+        val epubHandlerUrl = System.getenv("epubhandler") ?: "epubhelper:3000"
 
+        if (token.isEmpty() && (username.isEmpty() || password.isEmpty())) {
+            throw Exception("Please provide valid credentials!")
+        }
 
         val epubHandler = EpubHandler(client, database, epubHandlerUrl)
         val user = User(username, password)
-        user.auth(client)
-        println(user.token)
+        if (token.isNotEmpty()) {
+            user.token = token
+        } else {
+            user.auth(client)
+        }
+        println(user.token) // print token
         val bookInfo = loadBookInfo(user, bookid)
 
         bookInfo.bookChapters.map { chapter ->
