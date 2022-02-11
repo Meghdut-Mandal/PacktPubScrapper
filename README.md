@@ -21,7 +21,7 @@ This tool lets you download ebooks and videos from [https://www.packtpub.com/](h
 * Get a trial account at [https://www.packtpub.com/](https://www.packtpub.com/)  
 * It requires a simple visa or a mastercard, and 1 USD will be charged and refunded in a day.
 * Clone this repo locally.
-*  Create a **.env  **file which contains the following variables.
+*  Create a **.env** file which contains the following variables.
     * user
     * pass 
     * bookid  
@@ -42,7 +42,7 @@ TOKEN="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ..
 
 * bookid can be found from the URL such as : 
 * https://www.packtpub.com/product/aws-security-cookbook/**_9781838826253_**
-* Run **docker-compose build **
+* Run **docker-compose build**
 * Run **docker-compose up**
 * Now sit back a grab a cup of Chai ☕ 
 
@@ -60,7 +60,7 @@ TOKEN="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ..
 * Nodejs 
 * Docker
 
-**Dependencies **
+**Dependencies**
 
 
 
