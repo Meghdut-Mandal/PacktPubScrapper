@@ -41,7 +41,7 @@ TOKEN="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ..
 
 
 * bookid can be found from the URL such as : 
-* https://www.packtpub.com/product/aws-security-cookbook/**_9781838826253_**
+* https://www.packtpub.com/product/aws-security-cookbook/**9781838826253** 
 * Run **docker-compose build**
 * Run **docker-compose up**
 * Now sit back a grab a cup of Chai ☕ 
