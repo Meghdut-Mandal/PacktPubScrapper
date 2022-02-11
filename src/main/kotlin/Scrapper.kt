@@ -202,7 +202,13 @@ object Scrapper {
             }.joinAll()
 
             println("Requests made  ${counter.get()}")
-            println("Now converting to Epub")
+
+            if(bookInfo.type!="videos"){
+                println("Now converting to Epub")
+                epubHandler.convertBook(bookid)
+                println("Done")
+                client.close()
+            }
 
         }
 
