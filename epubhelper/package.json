@@ -10,8 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.25.0",
-    "compression": "^1.7.4",
     "epub-gen": "^0.1.0",
     "express": "^4.17.2"
   }

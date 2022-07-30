@@ -1,6 +1,8 @@
 import com.google.gson.JsonObject
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
@@ -25,9 +27,8 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
             // json header
             contentType(ContentType.Application.Json)
             // add body
-            body = jsonBody
+            setBody(jsonBody)
         }
-        println("  " + res.content)
         client.close()
 
     }
@@ -41,9 +42,9 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
             // json header
             contentType(ContentType.Application.Json)
             // add body
-            body = jsonBody
-        }
-        println("sent chapter $title with status ${res.status}")
+            setBody(jsonBody)
+        }.bodyAsText()
+        println("sent chapter $title with status ${res}")
     }
 
 }

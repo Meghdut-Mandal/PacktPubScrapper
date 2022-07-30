@@ -1,10 +1,12 @@
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.engine.okhttp.*
-import io.ktor.client.plugins.json.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
+import io.ktor.serialization.gson.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
@@ -15,19 +17,18 @@ import models.Section
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.forEach
-import kotlin.collections.map
-import kotlin.collections.mutableMapOf
 import kotlin.collections.set
 
 
 object Scrapper {
     private val isLoaded = mutableMapOf<String, Boolean>()
     private val client = HttpClient(OkHttp) {
-        install(JsonPlugin) {
-            serializer = GsonSerializer()
+        install(ContentNegotiation) {
+            gson()
         }
     }
+
+    private val objDump = mutableListOf<JsonObject>()
     private val gson = Gson()
     private val database = BooksDatabase()
     private val counter = AtomicInteger(0)
@@ -56,15 +57,12 @@ object Scrapper {
         bookChapter: BookChapter,
         section: Section
     ) = runBlocking {
-        val response = client.get(
+        val jsonObject:JsonObject = client.get(
             "${NetworkConfig.VIDEO_ENDPOINT}/${bookInfo.bookId}/${bookChapter.id}/${section.id}",
             user.authHeader()
-        )
+        ).body()
         counter.incrementAndGet()
 
-        val jsonText = response.bodyAsText()
-        // get data from json
-        val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
 
         val videoUrl = jsonObject["data"].asString
 
@@ -92,21 +90,23 @@ object Scrapper {
     ) = runBlocking {
 
         if (isLoaded[section.id] == true) {
-            println("Already loaded ${section.id}")
+            println("Cached ${section.id}")
             return@runBlocking
         }
 
-        val response = client.get(
+        val jsonObject:JsonObject = client.get(
             "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.contentType}/${bookInfo.bookId}/${bookChapter.id.toInt()}/${section.id}",
             user.authHeader()
-        )
+        ).body()
+
+        println("Done loading  ${section.id}")
+
         counter.incrementAndGet()
 
-        val jsonText = response.bodyAsText()
-        // get data from json
-        val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
         val data = jsonObject["data"].asJsonObject
-        data.entrySet().forEach {
+
+        objDump.add(data)
+        data["content"].asJsonObject.entrySet().forEach {
             if (isLoaded[it.key] != true) {
                 isLoaded[it.key] = true
                 val bookPage = BookPage(
@@ -125,11 +125,7 @@ object Scrapper {
 
 
     private suspend fun loadBookInfo(user: User, bookId: String): BookInfo {
-        val response = client.get("${NetworkConfig.API_BASE}/$bookId/summary", user.authHeader())
-
-        val jsonText = response.bodyAsText()
-        // get data from json
-        val jsonObject = Gson().fromJson(jsonText, JsonObject::class.java)
+        val jsonObject:JsonObject  = client.get("${NetworkConfig.API_BASE}/$bookId/summary", user.authHeader()).body()
 
         val data = jsonObject["data"].asJsonObject
 
@@ -167,7 +163,7 @@ object Scrapper {
         return info
     }
 
-    private val executor = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
+    private val executor = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
 
     @JvmStatic
     fun main(args: Array<String>) =
