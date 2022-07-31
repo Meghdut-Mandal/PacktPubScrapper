@@ -11,7 +11,6 @@ import kotlinx.coroutines.runBlocking
 class EpubHandler(private val client: HttpClient, private val database: BooksDatabase, private val ephubHandlerUrl: String) {
 
 
-    @OptIn(InternalAPI::class)
     fun convertBook(bookId: String) = runBlocking(Dispatchers.IO) {
         val bookPages = database.getBookPages(bookId)
         val bookInfo = database.getBookInfo(bookId)?: throw Exception("Book not found")
@@ -33,8 +32,7 @@ class EpubHandler(private val client: HttpClient, private val database: BooksDat
 
     }
 
-    @OptIn(InternalAPI::class)
-    suspend fun sendChapter(title: String, data: String) {
+    private suspend fun sendChapter(title: String, data: String) {
         val jsonBody = JsonObject()
         jsonBody.addProperty("title", title)
         jsonBody.addProperty("data", data.replace("<?xml encoding=\"utf-8\" ?>", ""))
