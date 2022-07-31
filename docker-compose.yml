@@ -25,6 +25,8 @@ services:
     image: mongo:latest
     volumes:
       - ./store/mongo:/data/db
+    logging:
+      driver: none
     depends_on:
       - scrapper
     restart: always
