@@ -163,7 +163,7 @@ object Scrapper {
         return info
     }
 
-    private val executor = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
+    private val executor = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
     @JvmStatic
     fun main(args: Array<String>) =
