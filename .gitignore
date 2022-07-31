@@ -97,3 +97,4 @@ gradle-app.setting
 .classpath
 /store/
 /.env
+/store/mongo/

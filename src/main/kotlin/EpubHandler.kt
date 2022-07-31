@@ -1,22 +1,29 @@
 import com.google.gson.JsonObject
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import io.ktor.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import org.litote.kmongo.MongoOperator
 
 class EpubHandler(private val client: HttpClient, private val database: BooksDatabase, private val ephubHandlerUrl: String) {
 
 
-    fun convertBook(bookId: String) = runBlocking(Dispatchers.IO) {
-        val bookPages = database.getBookPages(bookId)
-        val bookInfo = database.getBookInfo(bookId)?: throw Exception("Book not found")
-        bookPages.forEach {
-            sendChapter(it.title, it.pageContent)
+    fun convertBook(bookId: Long) = runBlocking(Dispatchers.IO) {
+
+        val bookPages = database.getPagesByBookId(bookId)
+        val pageMap = bookPages.associate { it._id.sectionId to it.content }
+        val bookInfo = database.getBookInfoById(bookId)?: throw Exception("Book not found")
+
+        bookInfo.bookChapters.sortedBy { it.id }.forEach {chapter->
+            chapter.sections.sortedBy { it.id }.forEach { section ->
+                val page = pageMap[section.id] ?: throw Exception("Page Content not found")
+                sendChapter(section.title, page)
+            }
         }
+
+
 
         val jsonBody = JsonObject()
         jsonBody.addProperty("title", bookInfo.title)

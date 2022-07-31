@@ -1,13 +1,13 @@
 package models
 
 
-import com.google.gson.annotations.SerializedName
+class BookChapter(rawData: Map<*, *>) : BaseJsonObject(rawData) {
+    val id:String
+        get() = g("id")?: ""
 
-data class BookChapter(
-    @SerializedName("id")
-    val id: String,
-    @SerializedName("sections")
-    val sections: List<Section>,
-    @SerializedName("title")
-    val title: String
-)
+    val title:String
+        get() = g("title") ?: ""
+
+    val sections:List<Section>
+        get() = l("sections").map { Section(it) }
+}

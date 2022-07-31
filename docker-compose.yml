@@ -10,6 +10,7 @@ services:
       - bookid=${bookid}
       - user=${user}
       - pass=${pass}
+      - MONGO_URL=mongodb://db:27017
       - epubhandler=epubhelper:3000
       - TOKEN=${TOKEN}
   epubhelper:
@@ -20,3 +21,10 @@ services:
       - ./store:/usr/app/store
     ports:
       - "3000:3000"
+  db:
+    image: mongo:latest
+    volumes:
+      - ./store/mongo:/data/db
+    depends_on:
+      - scrapper
+    restart: always
