@@ -1,9 +1,6 @@
-import com.google.gson.JsonObject
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.http.ContentDisposition.Parameters.FileName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import models.BookChapter
@@ -13,19 +10,16 @@ import net.seeseekey.epubwriter.model.TocLink
 import org.apache.commons.io.output.ByteArrayOutputStream
 import java.io.File
 import java.nio.charset.Charset
-import kotlin.text.Typography.section
 
 
-class EpubHandler(
+class EpubHelper(
     private val client: HttpClient,
     private val database: BooksDatabase,
-    private val ephubHandlerUrl: String,
-    private val cssFilePath: String = "epubhelper/src/app.css",
-    private val epubFilePath: String = "test.epub"
+    private val cssFilePath: String = "epubhelper/src/app.css"
 ) {
 
 
-    suspend fun convertBook(bookId: Long) = runBlocking(Dispatchers.IO) {
+    suspend fun convertBook(bookId: Long,epubFilePath: String) = runBlocking(Dispatchers.IO) {
         val bookPages = database.getPagesByBookId(bookId)
         val pageMap = bookPages.associate { it._id.sectionId to it.content }
         val bookInfo = database.getBookInfoById(bookId) ?: throw Exception("Book not found")

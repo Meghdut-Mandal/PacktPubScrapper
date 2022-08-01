@@ -14,9 +14,11 @@ import models.BookInfo
 import models.Section
 import org.bson.Document
 import java.io.File
+import java.lang.System.exit
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.set
+import kotlin.system.exitProcess
 
 
 object Scrapper {
@@ -122,20 +124,19 @@ object Scrapper {
     private val executor = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
     @JvmStatic
-    fun main(args: Array<String>) =
+    fun main(args: Array<String>): Nothing =
         runBlocking(executor) {
             val token = System.getenv("TOKEN") ?: ""
             val bookid =
                 System.getenv("bookid") ?: throw Exception("No bookid found in the ENV variables!")
             val username = System.getenv("user") ?: ""
             val password = System.getenv("pass") ?: ""
-            val epubHandlerUrl = System.getenv("epubhandler") ?: "epubhelper:3000"
 
             if (token.isEmpty() && (username.isEmpty() || password.isEmpty())) {
                 throw Exception("Please provide valid credentials!")
             }
 
-            val epubHandler = EpubHandler(client, database, epubHandlerUrl)
+            val epubHelper = EpubHelper(client, database)
             val user = User(username, password)
             if (token.isNotEmpty()) {
                 user.token = token
@@ -161,11 +162,12 @@ object Scrapper {
 
             if(bookInfo.contentType !="videos"){
                 println("Now converting to Epub")
-                epubHandler.convertBook(bookInfo.bookId)
+                val epubFile = "store/${bookInfo.title.asFileName()}.epub"
+                epubHelper.convertBook(bookInfo.bookId, epubFile)
                 println("Done")
                 client.close()
             }
-
+            exitProcess(0)
         }
 
     private fun loadChapterSequential(

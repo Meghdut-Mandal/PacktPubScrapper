@@ -11,16 +11,7 @@ services:
       - user=${user}
       - pass=${pass}
       - MONGO_URL=mongodb://db:27017
-      - epubhandler=epubhelper:3000
       - TOKEN=${TOKEN}
-  epubhelper:
-    build:
-      dockerfile: epubhelper.Dockerfile
-      context: .
-    volumes:
-      - ./store:/usr/app/store
-    ports:
-      - "3000:3000"
   db:
     image: mongo:latest
     volumes:
