@@ -6,17 +6,22 @@ import io.ktor.http.*
 import io.ktor.http.ContentDisposition.Parameters.FileName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import models.BookChapter
+import models.BookInfo
 import net.seeseekey.epubwriter.model.EpubBook
 import net.seeseekey.epubwriter.model.TocLink
 import org.apache.commons.io.output.ByteArrayOutputStream
 import java.io.File
+import java.nio.charset.Charset
 import kotlin.text.Typography.section
 
 
 class EpubHandler(
     private val client: HttpClient,
     private val database: BooksDatabase,
-    private val ephubHandlerUrl: String
+    private val ephubHandlerUrl: String,
+    private val cssFilePath: String = "epubhelper/src/app.css",
+    private val epubFilePath: String = "test.epub"
 ) {
 
 
@@ -28,37 +33,27 @@ class EpubHandler(
         val book =
             EpubBook("en", bookId.toString(), bookInfo.title, bookInfo.author.joinToString(","))
 
-        val coverImage = bookInfo.coverImage!!
-//        read image
-        val response = client.get(coverImage)
-        val byteArOutPutStream = ByteArrayOutputStream()
-        response.readBytes().inputStream().use {
-            it.copyTo(byteArOutPutStream)
-        }
-        book.addCoverImage(byteArOutPutStream.toByteArray(), "image/jpeg", "images/cover.jpg")
+        val coverImageBytes = getCoverImageBytes(bookInfo)
+        book.addCoverImage(coverImageBytes, "image/jpeg", "images/cover.jpg")
 
-        book.isAutoToc = false
         // Create toc
+        book.isAutoToc = false
         book.tocLinks = bookInfo.bookChapters.map { chapter ->
             val tocChapter = TocLink("chapter-${chapter.id}.xhtml", chapter.title, null)
-            tocChapter.tocChildLinks = chapter.sections.map { section ->
-                val sectionHref = "section-${section.id}.xhtml"
-                val tocSection = TocLink(sectionHref, section.title, null)
-                val content = pageMap[section.id]?.replace("<?xml encoding=\"utf-8\" ?>", "") ?: ""
-                val htmlContent = generateContent(section.title, content)
-
-                book.addContent(
-                    htmlContent.toByteArray(),
-                    "application/xhtml+xml",
-                    sectionHref,
-                    true,
-                    true
-                )
-                tocSection
-            }.toList()
-            tocChapter
+            tocChapter.tocChildLinks = tocLinks(chapter, pageMap, book)
+            return@map tocChapter
         }
-        val cssFile = File("epubhelper/src/app.css")
+
+        addCss(book)
+//        delete the file
+        File(epubFilePath).delete()
+        File(epubFilePath).outputStream().use {
+            book.writeToStream(it)
+        }
+    }
+
+    private fun addCss(book: EpubBook) {
+        val cssFile = File(cssFilePath)
         cssFile.readBytes()
         book.addContent(
             cssFile.readBytes(),
@@ -67,9 +62,43 @@ class EpubHandler(
             false,
             false
         )
-        File("test.epub").delete();
-        book.writeToFile("test.epub")
     }
+
+    private suspend fun getCoverImageBytes(bookInfo: BookInfo): ByteArray? {
+        val coverImage = bookInfo.coverImage!!
+        val response = client.get(coverImage)
+        val byteArOutPutStream = ByteArrayOutputStream()
+        response.readBytes().inputStream().use {
+            it.copyTo(byteArOutPutStream)
+        }
+        val coverImageBytes = byteArOutPutStream.toByteArray()
+        return coverImageBytes
+    }
+
+    private fun tocLinks(
+        chapter: BookChapter,
+        pageMap: Map<String?, String>,
+        book: EpubBook
+    ) = chapter.sections.map { section ->
+        val sectionHref = "section-${section.id}.xhtml"
+        val tocSection = TocLink(sectionHref, section.title, null)
+        val content = pageMap[section.id]?.replace("<?xml encoding=\"utf-8\" ?>", "") ?: ""
+
+        return@map if (content.isNotEmpty()) {
+            val htmlContent = generateContent(section.title, content)
+
+            book.addContent(
+                htmlContent.toByteArray(Charset.forName("UTF-8")),
+                "application/xhtml+xml",
+                sectionHref,
+                true,
+                true
+            )
+            tocSection
+        } else {
+            null
+        }
+    }.filterNotNullTo(arrayListOf())
 
 
     private fun generateContent(title: String, data: String) = """
@@ -85,6 +114,5 @@ $data
 </body>
 </html>
 """.trimIndent()
-
 
 }
