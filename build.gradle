@@ -38,10 +38,12 @@ dependencies {
 
 // https://mvnrepository.com/artifact/org.jetbrains.exposed/exposed-core
     implementation 'org.jetbrains.exposed:exposed-core:0.38.2'
-    implementation 'io.ktor:ktor-client-okhttp:2.0.2'
-    implementation 'io.ktor:ktor-client-gson:2.0.2'
     implementation "io.ktor:ktor-serialization-gson:2.0.2"
     implementation "io.ktor:ktor-client-content-negotiation:2.0.2"
+    implementation 'net.seeseekey:epubwriter:1.0.3'
+    implementation 'io.ktor:ktor-client-okhttp-jvm:2.0.3'
+    implementation 'io.ktor:ktor-client-gson-jvm:2.0.3'
+
 // https://mvnrepository.com/artifact/org.jetbrains.exposed/exposed-jdbc
     runtimeOnly 'org.jetbrains.exposed:exposed-jdbc:0.38.2'
 

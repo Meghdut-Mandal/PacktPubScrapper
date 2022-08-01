@@ -86,9 +86,10 @@ object Scrapper {
             println("Cached ${section.id}")
             return@runBlocking
         }
+        database.savePage(bookInfo, bookChapter, section.id!!, "")
 
         val jsonObject: JsonObject = client.get(
-            "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.contentType}/${bookInfo.bookId}/${bookChapter.id.toInt()}/${section.id}",
+            "${NetworkConfig.BOOKS_ENDPOINT}/${bookInfo.contentType}/${bookInfo.bookId}/${bookChapter.id}/${section.id}",
             user.authHeader()
         ).body()
 
@@ -142,7 +143,11 @@ object Scrapper {
                 user.auth(client)
             }
             println(user.token) // print token
-            val bookInfo = loadBookInfo(user, bookid)
+            val bookInfo = database.getBookInfoById(bookid.toLong()) ?: loadBookInfo(user, bookid)
+
+            database.getPagesByBookId(bookid.toLong()).forEach {
+                isLoaded[it._id.sectionId.toString()] = true
+            }
 
 
             bookInfo.bookChapters.map { chapter ->
@@ -163,7 +168,7 @@ object Scrapper {
 
         }
 
-    private suspend fun loadChapterSequential(
+    private fun loadChapterSequential(
         chapter: BookChapter,
         user: User,
         bookInfo: BookInfo

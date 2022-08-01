@@ -1,7 +1,7 @@
 package models
 
 
-class BookInfo(rawData: Map<*,*>) : BaseJsonObject(rawData) {
+class BookInfo(rawData: Map<*, *>) : BaseJsonObject(rawData) {
 
     val contentType: String
         get() = readUrl.split("/")[1]
@@ -17,12 +17,9 @@ class BookInfo(rawData: Map<*,*>) : BaseJsonObject(rawData) {
         get() = g("title") ?: ""
 
 
-    val author: String?
-        get() {
-            val authorList = rawData.l("linkAuthors")
-            val firstAuthor = authorList[0]
-            return firstAuthor.g("author")
-        }
+    val author: List<String>
+        get() = rawData.l("linkAuthors")
+                    .map { it["author"] as String }
 
 
     val coverImage: String?
@@ -33,7 +30,7 @@ class BookInfo(rawData: Map<*,*>) : BaseJsonObject(rawData) {
         get() {
             val tableOfContents = m("toc")!!
             val chapters = tableOfContents.l("chapters").map { BookChapter(it) }
-            val preface = tableOfContents.l("preface").map { BookChapter(it) }
+            val preface = tableOfContents.l("prefaces").map { BookChapter(it) }
             val appendices = tableOfContents.l("appendices").map { BookChapter(it) }
             return preface + chapters + appendices
         }
