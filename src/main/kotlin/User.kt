@@ -10,7 +10,6 @@ class User(val username: String, val password: String) {
 
     lateinit var token: String
 
-    @OptIn(InternalAPI::class)
     suspend fun auth(client: HttpClient) {
         val response = client.post("${NetworkConfig.BASE_URL}${NetworkConfig.AUTH_ENDPOINT}") {
             contentType(ContentType.Application.Json)
@@ -22,7 +21,7 @@ class User(val username: String, val password: String) {
                 )
                 append(HttpHeaders.Authorization, "")
             }
-            body = this@User
+            setBody(this@User)
         }
 
         if (response.status == HttpStatusCode.OK) {

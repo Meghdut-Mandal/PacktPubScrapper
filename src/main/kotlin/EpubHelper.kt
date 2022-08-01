@@ -15,7 +15,7 @@ import java.nio.charset.Charset
 class EpubHelper(
     private val client: HttpClient,
     private val database: BooksDatabase,
-    private val cssFilePath: String = "epubhelper/src/app.css"
+    private val cssFilePath: String = "app.css"
 ) {
 
 
