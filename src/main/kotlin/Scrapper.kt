@@ -124,7 +124,7 @@ object Scrapper {
     private val executor = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
     @JvmStatic
-    fun main(args: Array<String>): Nothing =
+    fun main(args: Array<String>) =
         runBlocking(executor) {
             val token = System.getenv("TOKEN") ?: ""
             val bookid =
@@ -167,7 +167,7 @@ object Scrapper {
                 println("Done")
                 client.close()
             }
-            exitProcess(0)
+            exit(0)
         }
 
     private fun loadChapterSequential(

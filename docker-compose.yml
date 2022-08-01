@@ -6,6 +6,8 @@ services:
       context: .
     volumes:
       - ./store:/usr/app/store
+    depends_on:
+      - db
     environment:
       - bookid=${bookid}
       - user=${user}
@@ -14,10 +16,8 @@ services:
       - TOKEN=${TOKEN}
   db:
     image: mongo:latest
+    ports:
+      - "27017:27017"
     volumes:
       - ./store/mongo:/data/db
-    logging:
-      driver: none
-    depends_on:
-      - scrapper
     restart: always
