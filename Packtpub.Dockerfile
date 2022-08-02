@@ -1,4 +1,4 @@
-FROM gradle:7.3.3-jdk11-alpine AS TEMP_BUILD_IMAGE
+FROM gradle:7.3.3-jdk17-alpine AS TEMP_BUILD_IMAGE
 ENV APP_HOME=/usr/app/
 WORKDIR $APP_HOME
 COPY build.gradle settings.gradle $APP_HOME
@@ -13,12 +13,13 @@ COPY . .
 RUN gradle clean shadowJar || return 0
 
 # actual container
-FROM adoptopenjdk/openjdk11:alpine-jre
+FROM eclipse-temurin:17.0.4_8-jre-jammy
 ENV ARTIFACT_NAME=scrapper.jar
 ENV APP_HOME=/usr/app
 
 WORKDIR $APP_HOME
 COPY --from=TEMP_BUILD_IMAGE $APP_HOME/build/libs/$ARTIFACT_NAME .
-
+# copy css
+COPY app.css .
 EXPOSE 8080
 ENTRYPOINT exec java -jar ${ARTIFACT_NAME}

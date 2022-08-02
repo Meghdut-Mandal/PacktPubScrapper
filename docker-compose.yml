@@ -6,17 +6,18 @@ services:
       context: .
     volumes:
       - ./store:/usr/app/store
+    depends_on:
+      - db
     environment:
       - bookid=${bookid}
       - user=${user}
       - pass=${pass}
-      - epubhandler=epubhelper:3000
+      - MONGO_URL=mongodb://db:27017
       - TOKEN=${TOKEN}
-  epubhelper:
-    build:
-      dockerfile: epubhelper.Dockerfile
-      context: .
-    volumes:
-      - ./store:/usr/app/store
+  db:
+    image: mongo:latest
     ports:
-      - "3000:3000"
+      - "27017:27017"
+    volumes:
+      - ./store/mongo:/data/db
+    restart: always

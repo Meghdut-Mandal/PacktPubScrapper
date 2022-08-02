@@ -1,21 +1,26 @@
 package models
 
 
-import com.google.gson.annotations.SerializedName
+class Section(rawData: Map<*, *>) : BaseJsonObject(rawData) {
 
-data class Section(
-    @SerializedName("content")
-    val content: String,
-    @SerializedName("contentType")
-    val contentType: String,
-    @SerializedName("id")
-    val id: String,
-    @SerializedName("metaDescription")
-    val metaDescription: String,
-    @SerializedName("packtplusUrl")
-    val packtplusUrl: String,
-    @SerializedName("title")
-    val title: String,
-    @SerializedName("url")
-    val url: String
-)
+    val content: String?
+        get() = g("content")
+
+    val contentType: String?
+        get() = g("contentType")
+
+    val id: String?
+        get() = g("id")
+
+    val metaDescription: String?
+        get() = g("metaDescription")
+
+    val packtplusUrl: String?
+        get() = g("packtplusUrl")
+
+    val title: String
+        get() = g("title") ?: ""
+
+    val url: String?
+        get() = g("url")
+}

@@ -1,6 +1,7 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.6.10'
+    id 'org.jetbrains.kotlin.jvm' version '1.7.0'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id "org.jetbrains.kotlin.kapt" version '1.7.0'
     id 'java'
 }
 
@@ -29,18 +30,27 @@ jar {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib"
-    implementation 'io.ktor:ktor-client-okhttp:2.0.0-eap-256'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.0'
     // https://mvnrepository.com/artifact/org.jsoup/jsoup
-    implementation 'org.jsoup:jsoup:1.14.3'
-    implementation "io.ktor:ktor-client-gson:2.0.0-eap-256"
     implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
-    implementation("com.google.guava:guava:31.0.1-jre")
+    implementation('com.google.guava:guava:31.1-jre')
+
 
 // https://mvnrepository.com/artifact/org.jetbrains.exposed/exposed-core
-    implementation 'org.jetbrains.exposed:exposed-core:0.37.3'
+    implementation 'org.jetbrains.exposed:exposed-core:0.38.2'
+    implementation "io.ktor:ktor-serialization-gson:2.0.2"
+    implementation "io.ktor:ktor-client-content-negotiation:2.0.2"
+    implementation 'net.seeseekey:epubwriter:1.0.3'
+    implementation 'io.ktor:ktor-client-okhttp-jvm:2.0.3'
+    implementation 'io.ktor:ktor-client-gson-jvm:2.0.3'
+
 // https://mvnrepository.com/artifact/org.jetbrains.exposed/exposed-jdbc
-    runtimeOnly 'org.jetbrains.exposed:exposed-jdbc:0.36.1'
+    runtimeOnly 'org.jetbrains.exposed:exposed-jdbc:0.38.2'
+
+    implementation 'org.litote.kmongo:kmongo:4.6.1'
+
+    kapt 'org.litote.kmongo:kmongo-annotation-processor:4.6.1'
+
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

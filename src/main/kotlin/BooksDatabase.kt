@@ -1,121 +1,51 @@
-import BooksDatabase.BookInfoTable.type
-import BooksDatabase.BookPagesTable.chapterId
-import BooksDatabase.BookPagesTable.pageId
-import com.google.common.hash.Hashing
-import models.BookInfo
-import models.BookPage
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.transactions.transaction
-
+import com.mongodb.client.model.Filters.eq
+import models.*
+import org.litote.kmongo.*
 
 class BooksDatabase {
 
-    init {
-        Database.connect("jdbc:sqlite:store/book_pages.db", driver = "org.sqlite.JDBC")
-        transaction {
-            SchemaUtils.create(BookPagesTable, BookInfoTable)
+    // connect to mongoDb database
+    private val mongoURl = System.getenv("MONGO_URL") ?: "mongodb://localhost:27017"
+    private val mongoClient = KMongo.createClient(mongoURl)
+    private val database = mongoClient.getDatabase("books")
+
+    // create a pages collection
+    private val pagesCollection = database.getCollection<SectionContent>("pages")
+
+    //        create a bookInfo collection
+    private val bookInfoCollection = database.getCollection<Map<*, *>>("bookInfo")
+
+
+    //    save book info
+    fun saveBookInfo(bookInfo: Map<*, *>): BookInfo {
+        val book = BookInfo(bookInfo)
+        bookInfo.toMutableMap().apply {
+            this["_id"] = book.bookId
+            bookInfoCollection.save(this)
         }
+        return book
     }
 
-    object BookPagesTable : Table("book_pages") {
-        val pageId = varchar("pageId", 20)
-        val id = varchar("id", 20)
-        override val primaryKey = PrimaryKey(id) // name is optional here
-        val bookId = varchar("book_id", 50)
-        val pageContent = text("page_content")
-        val chapterId = integer("chapter_id")
-        val title = text("title")
+    //     get book info by id
+    fun getBookInfoById(id: Long): BookInfo? {
+        val data = bookInfoCollection.findOne(eq("_id", id)) ?: return null
+        return BookInfo(data)
     }
 
-    object BookInfoTable : Table("book_info") {
-        val bookId = varchar("id", 20)
-        override val primaryKey = PrimaryKey(bookId) // name is optional here
-        val title = varchar("title", 100)
-        val isbn10 = varchar("isbn10", 20)
-        val oneLiner = text("oneLiner")
-        val about = text("about")
-        val category = varchar("category", 50)
-        val coverImage = text("coverImage")
-        val author = varchar("author", 100)
-        val readUrl = varchar("readUrl", 100)
-        val type = varchar("type", 50)
+    fun getPagesByBookId(bookId: Long): List<SectionContent> {
+        return pagesCollection.find(eq("bookId", bookId)).toList()
     }
 
-    fun savePage(bookPage: BookPage) {
-        val hf = Hashing.sha256()
-        val hash = hf.newHasher()
-            .putInt(bookPage.chapterId)
-            .putString(bookPage.bookId, Charsets.UTF_8)
-            .putString(bookPage.pageContent, Charsets.UTF_8)
-            .hash().asLong().toString(26)
 
-        transaction {
-            BookPagesTable.insertIgnore {
-                it[id] = hash
-                it[bookId] = bookPage.bookId
-                it[chapterId] = bookPage.chapterId
-                it[pageId] = bookPage.pageid
-                it[pageContent] = bookPage.pageContent
-                it[title] = bookPage.title
-            }
-        }
+    fun savePage(
+        bookInfo: BookInfo,
+        bookChapter: BookChapter,
+        sectionId: String,
+        content: String
+    ) {
+        val sectionContentKey = SectionContentKey(bookInfo.bookId, bookChapter.id, sectionId)
+        val sectionContent = SectionContent(sectionContentKey,bookInfo.bookId, content)
+        pagesCollection.save(sectionContent)
     }
 
-    fun saveBookInfo(bookInfo: BookInfo) {
-        transaction {
-            BookInfoTable.insertIgnore {
-                it[bookId] = bookInfo.bookId
-                it[title] = bookInfo.title
-                it[isbn10] = bookInfo.isbn10
-                it[oneLiner] = bookInfo.oneLiner
-                it[about] = bookInfo.about
-                it[category] = bookInfo.category
-                it[coverImage] = bookInfo.coverImage
-                it[readUrl] = bookInfo.readUrl
-                it[type] = bookInfo.type
-                it[author] = bookInfo.author
-            }
-        }
-    }
-
-    // get book info
-    fun getBookInfo(bookId: String): BookInfo? {
-        var bookInfo: BookInfo? = null
-        transaction {
-            BookInfoTable.select { BookInfoTable.bookId eq bookId }.forEach {
-                bookInfo = BookInfo(
-                    it[BookInfoTable.bookId],
-                    it[BookInfoTable.title],
-                    it[BookInfoTable.isbn10],
-                    it[BookInfoTable.oneLiner],
-                    it[BookInfoTable.about],
-                    it[BookInfoTable.category],
-                    it[BookInfoTable.coverImage],
-                    it[BookInfoTable.readUrl],
-                    it[BookInfoTable.type],
-                    it[BookInfoTable.author]
-                )
-            }
-        }
-        return bookInfo
-    }
-
-    // read BookPages from database of a bookid
-    fun getBookPages(bookId: String): List<BookPage> {
-        val bookPages = mutableListOf<BookPage>()
-        transaction {
-            BookPagesTable.select { BookPagesTable.bookId eq bookId }.forEach {
-                bookPages.add(
-                    BookPage(
-                        it[pageId],
-                        it[BookPagesTable.bookId],
-                        it[BookPagesTable.pageContent],
-                        it[chapterId],
-                        it[BookPagesTable.title]
-                    )
-                )
-            }
-        }
-        return bookPages
-    }
 }
