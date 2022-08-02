@@ -25,7 +25,7 @@ This tool lets you download ebooks and videos from [https://www.packtpub.com/](h
     * user
     * pass 
     * bookid  
-    *  TOKEN (optional)
+    * TOKEN (optional) You can get the token by inspecting the requests in chrome dev tools.
 
   A sample env file looks like 
 
@@ -54,10 +54,9 @@ TOKEN="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ..
 
 
 
-* Java 11
+* Java 17
 * Intellij IDEA (or any idea with awesome Kotlin Support)
 * Webstorm (or any idea with awesome Nodejs support)
-* Nodejs 
 * Docker
 
 **Dependencies**
@@ -66,9 +65,6 @@ TOKEN="Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQ..
 
 * JVM 
     * Jetbrains Exposed for easily handling sql Queries 
-    * Sqlite an embedded db
+    * MongoDb
     * Ktor-client for making network requests 
     * Gson for Json parsing 
-* Nodejs 
-    * epub-gen
-    * Express
